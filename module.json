@@ -35,6 +35,6 @@
     "templates/effect-manager.html"
   ],
   "url": "https://gitlab.com/boifuba/who-brings-what/",
-  "manifest": "https://github.com/Boifuba/who-brings-what/releases/download/1.0.0/module.json",
-  "download": "https://github.com/Boifuba/who-brings-what/releases/download/1.0.0/who-brings-what.zip"
+  "manifest": "https://github.com/Boifuba/who-brings-what/releases/download/0.0.1/module.json",
+  "download": "https://github.com/Boifuba/who-brings-what/releases/download/0.0.1/who-brings-what.zip"
 }
