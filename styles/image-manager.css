@@ -1,0 +1,178 @@
+.weapon-image-manager {
+    padding: 10px;
+}
+
+.manager-header {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.manager-header h2 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.manager-header p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.manager-controls {
+    margin-bottom: 20px;
+    text-align: center;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.add-image-btn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.add-image-btn:hover {
+    background: #45a049;
+}
+
+.reset-images-btn {
+    background: #FF9800;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.reset-images-btn:hover {
+    background: #F57C00;
+}
+
+.images-list {
+    max-height: 520px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.image-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    gap: 15px;
+}
+
+.image-item:last-child {
+    border-bottom: none;
+}
+
+.image-preview img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.image-info {
+    flex: 1;
+}
+
+.image-name-container {
+    margin-bottom: 8px;
+}
+
+.image-name-container label {
+    display: block;
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.image-name-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+.image-name-input:focus {
+    outline: none;
+    border-color: #2196F3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.image-path {
+    font-size: 12px;
+    color: #666;
+    word-break: break-all;
+}
+
+.image-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.enabled-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.delete-image {
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 5px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+}
+
+.delete-image:hover {
+    background: #da190b;
+}
+
+.no-images {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.manager-footer {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.save-btn {
+    background: #2196F3;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.save-btn:hover {
+    background: #1976D2;
+}

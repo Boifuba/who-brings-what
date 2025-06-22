@@ -1,0 +1,42 @@
+<div class="weapon-selection-dialog">
+    <div class="dialog-header">
+        <h2><i class="fas fa-sword"></i> Who Brings What?</h2>
+        <p>Select a token and click on a weapon to apply the effect</p>
+    </div>
+
+    <div class="weapons-grid">
+        {{#each enabledImages}}
+        <div class="weapon-card" 
+             data-key="{{this.key}}" 
+             data-name="{{this.name}}"
+             title="{{this.name}}">
+            <div class="weapon-icon">
+                <img src="{{this.url}}" alt="{{this.name}}" />
+            </div>
+            <div class="weapon-name">{{this.name}}</div>
+        </div>
+        {{/each}}
+    </div>
+
+    {{#unless allowMultiple}}
+    <div class="mode-notice">
+        <i class="fas fa-info-circle"></i>
+        <span>Single effect mode - applying new weapon will remove the previous one</span>
+    </div>
+    {{/unless}}
+
+    <div class="dialog-actions">
+        <button type="button" class="action-btn manage-effects-btn" data-action="manage-effects">
+            <i class="fas fa-cogs"></i>
+            <span>Manage Effects</span>
+        </button>
+        <button type="button" class="action-btn remove-all-btn" data-action="remove-all">
+            <i class="fas fa-trash-alt"></i>
+            <span>Remove All</span>
+        </button>
+        <button type="button" class="action-btn manage-images-btn" data-action="manage-images">
+            <i class="fas fa-images"></i>
+            <span>Manage Images</span>
+        </button>
+    </div>
+</div>

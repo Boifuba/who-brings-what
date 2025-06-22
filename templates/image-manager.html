@@ -1,0 +1,54 @@
+<div class="weapon-image-manager">
+    <div class="manager-header">
+        <h2>Weapon Image Manager - Who Brings What?</h2>
+        <p>Add, remove and configure the images that will appear in the weapon dialog.</p>
+    </div>
+
+    <div class="manager-controls">
+        <button type="button" id="add-image" class="add-image-btn">
+            <i class="fas fa-plus"></i> Add Image
+        </button>
+        <button type="button" id="reset-images" class="reset-images-btn">
+            <i class="fas fa-undo"></i> Reset Default Images
+        </button>
+    </div>
+
+    <div class="images-list">
+        {{#if images}}
+            {{#each images}}
+            <div class="image-item">
+                <div class="image-preview">
+                    <img src="{{url}}" alt="{{name}}" />
+                </div>
+                <div class="image-info">
+                    <div class="image-name-container">
+                        <label for="name-{{key}}">Name:</label>
+                        <input type="text" id="name-{{key}}" class="image-name-input" data-key="{{key}}" value="{{name}}" />
+                    </div>
+                    <div class="image-path">{{url}}</div>
+                </div>
+                <div class="image-controls">
+                    <label class="enabled-toggle">
+                        <input type="checkbox" class="toggle-enabled" data-key="{{key}}" {{#if enabled}}checked{{/if}} />
+                        <span>Enabled</span>
+                    </label>
+                    <button type="button" class="delete-image" data-key="{{key}}" title="Delete image">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            {{/each}}
+        {{else}}
+            <div class="no-images">
+                <p>No images found.</p>
+                <p>Make sure there are images in the module's <strong>/images/</strong> folder or click "Add Image" to add manually.</p>
+            </div>
+        {{/if}}
+    </div>
+
+    <div class="manager-footer">
+        <button type="button" id="save-settings" class="save-btn">
+            <i class="fas fa-save"></i> Save Settings
+        </button>
+    </div>
+</div>
