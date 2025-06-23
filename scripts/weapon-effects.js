@@ -1,5 +1,8 @@
+// Import weapon names configuration
+import { WEAPON_INITIAL_NAMES } from '../config/weapon-names.js';
+
 // Function to load default images from the module's images folder
-async function loadModuleImages() {
+async function loadModuleImages(forceReset = false) {
     try {
         console.log("Who Brings What?: Attempting to load module images...");
         
@@ -12,8 +15,14 @@ async function loadModuleImages() {
         console.log("Who Brings What?: Module found, path:", module.path);
         
         // Get existing settings to preserve custom names and enabled states
-        const existingSettings = game.settings.get("who-brings-what", "weaponImages") || {};
-        console.log("Who Brings What?: Existing settings:", existingSettings);
+        // BUT if forceReset is true, ignore existing settings completely
+        let existingSettings = {};
+        if (!forceReset) {
+            existingSettings = game.settings.get("who-brings-what", "weaponImages") || {};
+            console.log("Who Brings What?: Existing settings:", existingSettings);
+        } else {
+            console.log("Who Brings What?: Force reset - ignoring existing settings");
+        }
         
         // Try different possible paths
         const possiblePaths = [
@@ -43,37 +52,45 @@ async function loadModuleImages() {
                         
                         // Check if it's an image file
                         if (imageExtensions.includes(fileExtension)) {
-                            const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
-                            // Create key from filename (always based on actual file)
-                            const key = nameWithoutExt.toLowerCase().replace(/\s+/g, '-');
+                            // CRITICAL: USE THE FULL FILE PATH AS THE KEY - THIS NEVER CHANGES!
+                            const key = filePath; // The file path IS the permanent key
                             
-                            // Check if we have existing settings for this key
-                            const existingImage = existingSettings[key];
+                            // Check if we have existing settings for this exact file path (only if not forcing reset)
+                            const existingImage = !forceReset ? existingSettings[key] : null;
                             
-                            // Use existing custom name if available, otherwise create default display name
+                            // Determine display name priority:
+                            // 1. Existing custom name (user already customized) - ONLY if not forcing reset
+                            // 2. Configured name from weapon-names.js
+                            // 3. Auto-generated from filename
                             let displayName;
-                            if (existingImage && existingImage.name) {
-                                displayName = existingImage.name; // Preserve custom name
-                                console.log(`Who Brings What?: Preserving custom name for ${key}: ${displayName}`);
+                            if (!forceReset && existingImage && existingImage.name) {
+                                displayName = existingImage.name; // Preserve user's custom name
+                                console.log(`Who Brings What?: Preserving user custom name for ${fileName}: ${displayName}`);
+                            } else if (WEAPON_INITIAL_NAMES[fileName]) {
+                                displayName = WEAPON_INITIAL_NAMES[fileName]; // Use configured name
+                                console.log(`Who Brings What?: Using configured name for ${fileName}: ${displayName}`);
                             } else {
                                 // Create default display name from filename
+                                const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
                                 displayName = nameWithoutExt.split(/[-_\s]+/).map(word => 
                                     word.charAt(0).toUpperCase() + word.slice(1)
                                 ).join(' ');
-                                console.log(`Who Brings What?: Using default name for ${key}: ${displayName}`);
+                                console.log(`Who Brings What?: Using auto-generated name for ${fileName}: ${displayName}`);
                             }
                             
-                            // Use existing enabled state if available, otherwise default to true
-                            const enabled = existingImage ? existingImage.enabled : true;
+                            // Use existing enabled state if available (and not forcing reset), otherwise default to true
+                            const enabled = (!forceReset && existingImage) ? existingImage.enabled : true;
                             
+                            // CRITICAL: Key is the file path, URL is always the same as the key
                             weaponImages[key] = {
-                                name: displayName,
-                                url: filePath, // Always use the actual file path
-                                enabled: enabled
+                                name: displayName,        // Can be changed by user
+                                url: filePath,           // ALWAYS the actual file path - NEVER changes
+                                enabled: enabled,
+                                fileName: fileName       // Store original filename for reference
                             };
                             
                             foundImages = true;
-                            console.log(`Who Brings What?: Image loaded: ${displayName} -> ${filePath}`);
+                            console.log(`Who Brings What?: Image loaded - File: ${fileName}, Name: ${displayName}, Path: ${filePath}`);
                         }
                     }
                     
@@ -94,20 +111,23 @@ async function loadModuleImages() {
             
             // Create some example images as fallback
             weaponImages = {
-                'example-sword': {
+                'icons/weapons/swords/sword-broad-steel.webp': {
                     name: 'Example Sword',
                     url: 'icons/weapons/swords/sword-broad-steel.webp',
-                    enabled: true
+                    enabled: true,
+                    fileName: 'sword-broad-steel.webp'
                 },
-                'example-bow': {
+                'icons/weapons/bows/bow-recurve-brown.webp': {
                     name: 'Example Bow',
                     url: 'icons/weapons/bows/bow-recurve-brown.webp',
-                    enabled: true
+                    enabled: true,
+                    fileName: 'bow-recurve-brown.webp'
                 },
-                'example-axe': {
+                'icons/weapons/axes/axe-battle-worn.webp': {
                     name: 'Example Axe',
                     url: 'icons/weapons/axes/axe-battle-worn.webp',
-                    enabled: true
+                    enabled: true,
+                    fileName: 'axe-battle-worn.webp'
                 }
             };
             console.log("Who Brings What?: Using Foundry example images");
@@ -121,19 +141,24 @@ async function loadModuleImages() {
         
         // Fallback with default Foundry images
         return {
-            'fallback-sword': {
+            'icons/weapons/swords/sword-broad-steel.webp': {
                 name: 'Sword',
                 url: 'icons/weapons/swords/sword-broad-steel.webp',
-                enabled: true
+                enabled: true,
+                fileName: 'sword-broad-steel.webp'
             },
-            'fallback-bow': {
+            'icons/weapons/bows/bow-recurve-brown.webp': {
                 name: 'Bow',
                 url: 'icons/weapons/bows/bow-recurve-brown.webp',
-                enabled: true
+                enabled: true,
+                fileName: 'bow-recurve-brown.webp'
             }
         };
     }
 }
+
+// Global variable to store the current dialog instance
+let currentWeaponDialog = null;
 
 Hooks.once('init', async function() {
     console.log("Who Brings What?: Initializing module...");
@@ -151,17 +176,16 @@ Hooks.once('init', async function() {
         default: defaultImages,
         onChange: settings => {
             console.log("Who Brings What?: Image settings changed:", settings);
+            // Refresh the dialog if it's open
+            if (currentWeaponDialog && currentWeaponDialog.rendered) {
+                console.log("Who Brings What?: Refreshing open dialog due to settings change");
+                currentWeaponDialog.close();
+                // Re-open the dialog with updated data
+                setTimeout(() => {
+                    window.WhoBringsWhat.showDialog();
+                }, 100);
+            }
         }
-    });
-
-    // Register setting for multiple effects mode
-    game.settings.register("who-brings-what", "allowMultipleEffects", {
-        name: "Allow Multiple Effects",
-        hint: "Allow multiple weapon effects to be applied to the same token",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true
     });
 
     // Register a menu for managing images
@@ -200,7 +224,8 @@ class WeaponImageManager extends FormApplication {
                 key,
                 name: data.name,
                 url: data.url,
-                enabled: data.enabled
+                enabled: data.enabled,
+                fileName: data.fileName || key.split('/').pop()
             }))
         };
     }
@@ -232,12 +257,18 @@ class WeaponImageManager extends FormApplication {
             callback: async (path) => {
                 const weaponImages = foundry.utils.deepClone(game.settings.get("who-brings-what", "weaponImages"));
                 
-                // Extract filename without extension for the key
-                const filename = path.split('/').pop();
-                const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
-                const key = nameWithoutExt.toLowerCase().replace(/\s+/g, '-');
+                // Use the full path as the key (this never changes)
+                const key = path;
+                const fileName = path.split('/').pop();
                 
-                // Create display name (first letter uppercase)
+                // Check if image already exists
+                if (weaponImages[key]) {
+                    ui.notifications.warn(`Image "${fileName}" is already added!`);
+                    return;
+                }
+                
+                // Create display name from filename
+                const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
                 const displayName = nameWithoutExt.split(/[-_\s]+/).map(word => 
                     word.charAt(0).toUpperCase() + word.slice(1)
                 ).join(' ');
@@ -245,7 +276,8 @@ class WeaponImageManager extends FormApplication {
                 weaponImages[key] = {
                     name: displayName,
                     url: path,
-                    enabled: true
+                    enabled: true,
+                    fileName: fileName
                 };
                 
                 await game.settings.set("who-brings-what", "weaponImages", weaponImages);
@@ -296,17 +328,19 @@ class WeaponImageManager extends FormApplication {
         const confirmed = await Dialog.confirm({
             title: "Reset Default Images",
             content: `<p>Are you sure you want to reset to the module's default images?</p>
-                     <p><strong>Warning:</strong> This will remove all custom images you've added!</p>`,
+                     <p><strong>Warning:</strong> This will remove all custom images and names you've added!</p>
+                     <p><strong>Note:</strong> Names will be restored from config/weapon-names.js or auto-generated from filenames.</p>`,
             yes: () => true,
             no: () => false
         });
         
         if (confirmed) {
-            console.log("Who Brings What?: Resetting to default images...");
-            const defaultImages = await loadModuleImages();
+            console.log("Who Brings What?: Resetting to default images with force reset...");
+            // CRITICAL: Pass forceReset=true to ignore existing settings completely
+            const defaultImages = await loadModuleImages(true);
             await game.settings.set("who-brings-what", "weaponImages", defaultImages);
             this.render();
-            ui.notifications.info("Images reset to module defaults!");
+            ui.notifications.info("Images reset to module defaults! Names restored from configuration.");
         }
     }
 
@@ -400,6 +434,17 @@ class EffectManager extends FormApplication {
     }
 }
 
+// Function to generate a stable, unique status ID from file path
+function generateStatusId(filePath) {
+    // Create a hash from the file path that's more stable and unique
+    // Remove special characters and create a more readable but unique ID
+    const cleanPath = filePath.replace(/[^a-zA-Z0-9]/g, '');
+    const hash = btoa(filePath).replace(/[^a-zA-Z0-9]/g, '');
+    
+    // Use the full hash instead of truncating to avoid collisions
+    return `wbb-weapon-${hash}`;
+}
+
 Hooks.once('ready', async function() {
     console.log("Who Brings What?: System ready, registering global functions...");
     
@@ -410,7 +455,6 @@ Hooks.once('ready', async function() {
             const enabledImages = Object.entries(weaponImages)
                 .filter(([key, data]) => data.enabled)
                 .map(([key, data]) => ({ key, ...data }));
-            const allowMultiple = game.settings.get("who-brings-what", "allowMultipleEffects");
 
             console.log("Who Brings What?: Opening dialog with", enabledImages.length, "enabled images");
 
@@ -421,11 +465,15 @@ Hooks.once('ready', async function() {
             // Render the template with data
             const template = "modules/who-brings-what/templates/weapon-selection-dialog.html";
             const content = await renderTemplate(template, {
-                enabledImages,
-                allowMultiple
+                enabledImages
             });
 
-            new Dialog({
+            // Close existing dialog if open
+            if (currentWeaponDialog) {
+                currentWeaponDialog.close();
+            }
+
+            currentWeaponDialog = new Dialog({
                 title: "Who Brings What? - Apply Weapon Effect",
                 content,
                 buttons: {},
@@ -435,17 +483,19 @@ Hooks.once('ready', async function() {
                         const tokens = canvas.tokens.controlled;
                         if (!tokens.length) return ui.notifications.warn("Select a token!");
 
-                        const key = $(this).data("key");
+                        const key = $(this).data("key"); // This is the file path
                         const weaponName = $(this).data("name");
                         const weaponData = weaponImages[key];
-                        const statusId = `wbb-weapon-${key}`;
+                        
+                        // Create status ID from the file path (more stable and unique)
+                        const statusId = generateStatusId(key);
 
-                        console.log(`Who Brings What?: Applying weapon effect - Key: ${key}, Name: ${weaponName}, URL: ${weaponData.url}`);
+                        console.log(`Who Brings What?: Applying weapon effect - Key: ${key}, Name: ${weaponName}, URL: ${weaponData.url}, StatusID: ${statusId}`);
 
                         for (let token of tokens) {
                             const actor = token.actor;
 
-                            // Check if effect already exists
+                            // Check if effect already exists using the status ID
                             const existingEffect = actor.effects.find(e => 
                                 e.statuses && e.statuses.has(statusId)
                             );
@@ -455,33 +505,23 @@ Hooks.once('ready', async function() {
                                 continue;
                             }
 
-                            // If multiple effects not allowed, remove existing weapon effects
-                            if (!allowMultiple) {
-                                const existingWeaponEffects = actor.effects.contents.filter(e => 
-                                    e.statuses && Array.from(e.statuses).some(s => s.startsWith("wbb-weapon-"))
-                                );
-                                
-                                if (existingWeaponEffects.length > 0) {
-                                    const ids = existingWeaponEffects.map(e => e.id);
-                                    await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
-                                }
-                            }
-
-                            // Create new effect using modern approach
+                            // Create new effect using the EXACT file URL (never changes)
                             await ActiveEffect.create({
-                                icon: weaponData.url, // Always use the original file URL
+                                icon: weaponData.url, // ALWAYS use the original file URL
                                 label: weaponName, // Use the custom display name
                                 name: weaponName,
                                 statuses: [statusId],
                                 origin: actor.uuid,
                                 flags: { 
-                                    "who-brings-what": { weaponKey: key }
+                                    "who-brings-what": { 
+                                        weaponKey: key, // Store the file path as reference
+                                        weaponFileName: weaponData.fileName
+                                    }
                                 }
                             }, { parent: actor });
-                        }
 
-                        const modeText = allowMultiple ? "added" : "applied";
-                        ui.notifications.info(`Effect "${weaponName}" ${modeText} to token(s).`);
+                            ui.notifications.info(`Effect "${weaponName}" added to ${actor.name}.`);
+                        }
                     });
 
                     // Handle action buttons
@@ -508,16 +548,23 @@ Hooks.once('ready', async function() {
                             if (weaponEffects.length > 0) {
                                 const ids = weaponEffects.map(e => e.id);
                                 await token.actor.deleteEmbeddedDocuments("ActiveEffect", ids);
+                                ui.notifications.info(`Removed ${weaponEffects.length} weapon effects from ${token.actor.name}.`);
+                            } else {
+                                ui.notifications.info(`No weapon effects found on ${token.actor.name}.`);
                             }
                         }
-                        ui.notifications.info("All weapon effects removed from token(s).");
                     });
 
                     html.find("[data-action='manage-images']").on("click", () => {
                         new WeaponImageManager().render(true);
                     });
+                },
+                close: () => {
+                    currentWeaponDialog = null;
                 }
-            }, { width: 600, height: "auto" }).render(true);
+            }, { width: 600, height: "auto" });
+            
+            currentWeaponDialog.render(true);
         },
 
         // Function to open the image manager directly

@@ -2,6 +2,10 @@
     <div class="manager-header">
         <h2>Weapon Image Manager - Who Brings What?</h2>
         <p>Add, remove and configure the images that will appear in the weapon dialog.</p>
+        <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <strong>Important:</strong> The image file path never changes. Only the display name can be customized.
+        </div>
     </div>
 
     <div class="manager-controls">
@@ -22,10 +26,13 @@
                 </div>
                 <div class="image-info">
                     <div class="image-name-container">
-                        <label for="name-{{key}}">Name:</label>
-                        <input type="text" id="name-{{key}}" class="image-name-input" data-key="{{key}}" value="{{name}}" />
+                        <label for="name-{{@index}}">Display Name:</label>
+                        <input type="text" id="name-{{@index}}" class="image-name-input" data-key="{{key}}" value="{{name}}" />
                     </div>
-                    <div class="image-path">{{url}}</div>
+                    <div class="image-details">
+                        <div class="file-name"><strong>File:</strong> {{fileName}}</div>
+                        <div class="image-path"><strong>Path:</strong> {{url}}</div>
+                    </div>
                 </div>
                 <div class="image-controls">
                     <label class="enabled-toggle">
@@ -52,3 +59,195 @@
         </button>
     </div>
 </div>
+
+<style>
+.weapon-image-manager {
+    padding: 15px;
+}
+
+.manager-header h2 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+}
+
+.info-box {
+    background: #e8f4f8;
+    border: 1px solid #bee5eb;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.info-box i {
+    color: #17a2b8;
+}
+
+.manager-controls {
+    margin: 15px 0;
+    display: flex;
+    gap: 10px;
+}
+
+.add-image-btn, .reset-images-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.add-image-btn {
+    background: #28a745;
+    color: white;
+}
+
+.reset-images-btn {
+    background: #ffc107;
+    color: #212529;
+}
+
+.add-image-btn:hover {
+    background: #218838;
+}
+
+.reset-images-btn:hover {
+    background: #e0a800;
+}
+
+.images-list {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.image-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.image-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.image-preview {
+    flex-shrink: 0;
+}
+
+.image-preview img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 2px solid #dee2e6;
+}
+
+.image-info {
+    flex: 1;
+}
+
+.image-name-container {
+    margin-bottom: 8px;
+}
+
+.image-name-container label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 3px;
+    color: #495057;
+}
+
+.image-name-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.image-details {
+    font-size: 12px;
+    color: #6c757d;
+    line-height: 1.4;
+}
+
+.file-name {
+    margin-bottom: 2px;
+}
+
+.image-path {
+    word-break: break-all;
+}
+
+.image-controls {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.enabled-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.delete-image {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.delete-image:hover {
+    background: #c82333;
+}
+
+.no-images {
+    text-align: center;
+    padding: 30px;
+    color: #6c757d;
+}
+
+.manager-footer {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.save-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.save-btn:hover {
+    background: #0069d9;
+}
+</style>
