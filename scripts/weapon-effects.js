@@ -163,17 +163,14 @@ let currentWeaponDialog = null;
 Hooks.once('init', async function() {
     console.log("Who Brings What?: Initializing module...");
     
-    // Load default images
-    const defaultImages = await loadModuleImages();
-    
-    // Register module settings
+    // Register module settings with empty default - images will be loaded in 'ready' hook
     game.settings.register("who-brings-what", "weaponImages", {
         name: "Weapon Images",
         hint: "Manage weapon images for the module",
         scope: "world",
         config: false, // We'll handle this with our custom interface
         type: Object,
-        default: defaultImages,
+        default: {}, // Start with empty object - will be populated in 'ready' hook
         onChange: settings => {
             console.log("Who Brings What?: Image settings changed:", settings);
             // Refresh the dialog if it's open
@@ -447,6 +444,17 @@ function generateStatusId(filePath) {
 
 Hooks.once('ready', async function() {
     console.log("Who Brings What?: System ready, registering global functions...");
+    
+    // Check if weaponImages setting is empty and populate it with default images
+    const currentWeaponImages = game.settings.get("who-brings-what", "weaponImages");
+    if (!currentWeaponImages || Object.keys(currentWeaponImages).length === 0) {
+        console.log("Who Brings What?: weaponImages setting is empty, loading default images...");
+        const defaultImages = await loadModuleImages();
+        await game.settings.set("who-brings-what", "weaponImages", defaultImages);
+        console.log("Who Brings What?: Default images loaded and saved to settings");
+    } else {
+        console.log("Who Brings What?: weaponImages setting already populated with", Object.keys(currentWeaponImages).length, "images");
+    }
     
     // Register the macro function globally so it can be called from a Foundry macro
     window.WhoBringsWhat = {
