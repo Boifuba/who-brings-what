@@ -2,7 +2,7 @@
   "id": "who-brings-what",
   "title": "Who Brings What?",
   "description": "A module to apply weapon effects with custom icons and modifiers. Automatically loads weapon images from the module's images folder and includes a file picker for easy image management.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "compatibility": {
     "minimum": "10",
     "verified": "13",
