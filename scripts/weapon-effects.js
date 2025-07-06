@@ -1,30 +1,17 @@
-// Import weapon names configuration
 import { WEAPON_INITIAL_NAMES } from '../config/weapon-names.js';
 
-// Function to load default images from the module's images folder
 async function loadModuleImages(forceReset = false) {
     try {
-        console.log("Who Brings What?: Attempting to load module images...");
-        
         const module = game.modules.get("who-brings-what");
         if (!module) {
-            console.error("Who Brings What?: Module not found!");
             return {};
         }
         
-        console.log("Who Brings What?: Module found, path:", module.path);
-        
-        // Get existing settings to preserve custom names and enabled states
-        // BUT if forceReset is true, ignore existing settings completely
         let existingSettings = {};
         if (!forceReset) {
             existingSettings = game.settings.get("who-brings-what", "weaponImages") || {};
-            console.log("Who Brings What?: Existing settings:", existingSettings);
-        } else {
-            console.log("Who Brings What?: Force reset - ignoring existing settings");
         }
         
-        // Try different possible paths
         const possiblePaths = [
             `modules/who-brings-what/images`,
             `${module.path}/images`,
@@ -36,80 +23,54 @@ async function loadModuleImages(forceReset = false) {
         
         for (const imagesPath of possiblePaths) {
             try {
-                console.log(`Who Brings What?: Trying to load from: ${imagesPath}`);
-                
-                // Browse the images folder
                 const browseResult = await FilePicker.browse("data", imagesPath);
                 
                 if (browseResult && browseResult.files && browseResult.files.length > 0) {
-                    console.log(`Who Brings What?: Found ${browseResult.files.length} files in ${imagesPath}`);
-                    
                     const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'];
                     
                     for (const filePath of browseResult.files) {
                         const fileName = filePath.split('/').pop();
                         const fileExtension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
                         
-                        // Check if it's an image file
                         if (imageExtensions.includes(fileExtension)) {
-                            // CRITICAL: USE THE FULL FILE PATH AS THE KEY - THIS NEVER CHANGES!
-                            const key = filePath; // The file path IS the permanent key
-                            
-                            // Check if we have existing settings for this exact file path (only if not forcing reset)
+                            const key = filePath;
                             const existingImage = !forceReset ? existingSettings[key] : null;
                             
-                            // Determine display name priority:
-                            // 1. Existing custom name (user already customized) - ONLY if not forcing reset
-                            // 2. Configured name from weapon-names.js
-                            // 3. Auto-generated from filename
                             let displayName;
                             if (!forceReset && existingImage && existingImage.name) {
-                                displayName = existingImage.name; // Preserve user's custom name
-                                console.log(`Who Brings What?: Preserving user custom name for ${fileName}: ${displayName}`);
+                                displayName = existingImage.name;
                             } else if (WEAPON_INITIAL_NAMES[fileName]) {
-                                displayName = WEAPON_INITIAL_NAMES[fileName]; // Use configured name
-                                console.log(`Who Brings What?: Using configured name for ${fileName}: ${displayName}`);
+                                displayName = WEAPON_INITIAL_NAMES[fileName];
                             } else {
-                                // Create default display name from filename
                                 const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
                                 displayName = nameWithoutExt.split(/[-_\s]+/).map(word => 
                                     word.charAt(0).toUpperCase() + word.slice(1)
                                 ).join(' ');
-                                console.log(`Who Brings What?: Using auto-generated name for ${fileName}: ${displayName}`);
                             }
                             
-                            // Use existing enabled state if available (and not forcing reset), otherwise default to true
                             const enabled = (!forceReset && existingImage) ? existingImage.enabled : true;
                             
-                            // CRITICAL: Key is the file path, URL is always the same as the key
                             weaponImages[key] = {
-                                name: displayName,        // Can be changed by user
-                                url: filePath,           // ALWAYS the actual file path - NEVER changes
+                                name: displayName,
+                                url: filePath,
                                 enabled: enabled,
-                                fileName: fileName       // Store original filename for reference
+                                fileName: fileName
                             };
                             
                             foundImages = true;
-                            console.log(`Who Brings What?: Image loaded - File: ${fileName}, Name: ${displayName}, Path: ${filePath}`);
                         }
                     }
                     
                     if (foundImages) {
-                        console.log(`Who Brings What?: Success! Loaded ${Object.keys(weaponImages).length} images from ${imagesPath}`);
-                        break; // Stop at first working path
+                        break;
                     }
                 }
             } catch (pathError) {
-                console.log(`Who Brings What?: Path ${imagesPath} not found or inaccessible:`, pathError.message);
                 continue;
             }
         }
         
         if (!foundImages) {
-            console.warn("Who Brings What?: No images found in any tested paths");
-            console.warn("Who Brings What?: Make sure there's an 'images' folder inside the module with image files");
-            
-            // Create some example images as fallback
             weaponImages = {
                 'icons/weapons/swords/sword-broad-steel.webp': {
                     name: 'Example Sword',
@@ -130,16 +91,11 @@ async function loadModuleImages(forceReset = false) {
                     fileName: 'axe-battle-worn.webp'
                 }
             };
-            console.log("Who Brings What?: Using Foundry example images");
         }
         
-        console.log("Who Brings What?: Final result:", weaponImages);
         return weaponImages;
         
     } catch (error) {
-        console.error("Who Brings What?: Critical error loading images:", error);
-        
-        // Fallback with default Foundry images
         return {
             'icons/weapons/swords/sword-broad-steel.webp': {
                 name: 'Sword',
@@ -157,27 +113,19 @@ async function loadModuleImages(forceReset = false) {
     }
 }
 
-// Global variable to store the current dialog instance
 let currentWeaponDialog = null;
 
 Hooks.once('init', async function() {
-    console.log("Who Brings What?: Initializing module...");
-    
-    // Register module settings with empty default - images will be loaded in 'ready' hook
     game.settings.register("who-brings-what", "weaponImages", {
         name: "Weapon Images",
         hint: "Manage weapon images for the module",
         scope: "world",
-        config: false, // We'll handle this with our custom interface
+        config: false,
         type: Object,
-        default: {}, // Start with empty object - will be populated in 'ready' hook
+        default: {},
         onChange: settings => {
-            console.log("Who Brings What?: Image settings changed:", settings);
-            // Refresh the dialog if it's open
             if (currentWeaponDialog && currentWeaponDialog.rendered) {
-                console.log("Who Brings What?: Refreshing open dialog due to settings change");
                 currentWeaponDialog.close();
-                // Re-open the dialog with updated data
                 setTimeout(() => {
                     window.WhoBringsWhat.showDialog();
                 }, 100);
@@ -185,7 +133,6 @@ Hooks.once('init', async function() {
         }
     });
 
-    // Register a menu for managing images
     game.settings.registerMenu("who-brings-what", "manageImages", {
         name: "Manage Weapon Images",
         label: "Open Manager",
@@ -194,8 +141,6 @@ Hooks.once('init', async function() {
         type: WeaponImageManager,
         restricted: true
     });
-    
-    console.log("Who Brings What?: Module initialized successfully!");
 });
 
 class WeaponImageManager extends FormApplication {
@@ -214,7 +159,6 @@ class WeaponImageManager extends FormApplication {
 
     getData() {
         const weaponImages = game.settings.get("who-brings-what", "weaponImages");
-        console.log("Who Brings What?: Manager data:", weaponImages);
         
         return {
             images: Object.entries(weaponImages).map(([key, data]) => ({
@@ -230,19 +174,10 @@ class WeaponImageManager extends FormApplication {
     activateListeners(html) {
         super.activateListeners(html);
 
-        // Add image button
         html.find('#add-image').click(this._onAddImage.bind(this));
-        
-        // Delete image buttons
         html.find('.delete-image').click(this._onDeleteImage.bind(this));
-        
-        // Toggle enabled checkboxes
         html.find('.toggle-enabled').change(this._onToggleEnabled.bind(this));
-        
-        // Reset images button
         html.find('#reset-images').click(this._onResetImages.bind(this));
-        
-        // Save button
         html.find('#save-settings').click(this._onSave.bind(this));
     }
 
@@ -254,17 +189,14 @@ class WeaponImageManager extends FormApplication {
             callback: async (path) => {
                 const weaponImages = foundry.utils.deepClone(game.settings.get("who-brings-what", "weaponImages"));
                 
-                // Use the full path as the key (this never changes)
                 const key = path;
                 const fileName = path.split('/').pop();
                 
-                // Check if image already exists
                 if (weaponImages[key]) {
                     ui.notifications.warn(`Image "${fileName}" is already added!`);
                     return;
                 }
                 
-                // Create display name from filename
                 const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
                 const displayName = nameWithoutExt.split(/[-_\s]+/).map(word => 
                     word.charAt(0).toUpperCase() + word.slice(1)
@@ -332,8 +264,6 @@ class WeaponImageManager extends FormApplication {
         });
         
         if (confirmed) {
-            console.log("Who Brings What?: Resetting to default images with force reset...");
-            // CRITICAL: Pass forceReset=true to ignore existing settings completely
             const defaultImages = await loadModuleImages(true);
             await game.settings.set("who-brings-what", "weaponImages", defaultImages);
             this.render();
@@ -344,7 +274,6 @@ class WeaponImageManager extends FormApplication {
     async _onSave(event) {
         event.preventDefault();
         
-        // Get all image name inputs and update the settings
         const weaponImages = foundry.utils.deepClone(game.settings.get("who-brings-what", "weaponImages"));
         const nameInputs = this.element.find('.image-name-input');
         
@@ -354,7 +283,6 @@ class WeaponImageManager extends FormApplication {
             
             if (weaponImages[key] && newName) {
                 weaponImages[key].name = newName;
-                console.log(`Who Brings What?: Updating name for ${key}: ${newName}`);
             }
         });
         
@@ -364,7 +292,6 @@ class WeaponImageManager extends FormApplication {
     }
 }
 
-// Effect Manager Dialog Class
 class EffectManager extends FormApplication {
     constructor(actor) {
         super();
@@ -402,10 +329,7 @@ class EffectManager extends FormApplication {
     activateListeners(html) {
         super.activateListeners(html);
         
-        // Delete effect buttons
         html.find('.delete-effect').click(this._onDeleteEffect.bind(this));
-        
-        // Close button
         html.find('#close-manager').click(() => this.close());
     }
 
@@ -431,32 +355,20 @@ class EffectManager extends FormApplication {
     }
 }
 
-// Function to generate a stable, unique status ID from file path
 function generateStatusId(filePath) {
-    // Create a hash from the file path that's more stable and unique
-    // Remove special characters and create a more readable but unique ID
     const cleanPath = filePath.replace(/[^a-zA-Z0-9]/g, '');
     const hash = btoa(filePath).replace(/[^a-zA-Z0-9]/g, '');
     
-    // Use the full hash instead of truncating to avoid collisions
     return `wbb-weapon-${hash}`;
 }
 
 Hooks.once('ready', async function() {
-    console.log("Who Brings What?: System ready, registering global functions...");
-    
-    // Check if weaponImages setting is empty and populate it with default images
     const currentWeaponImages = game.settings.get("who-brings-what", "weaponImages");
     if (!currentWeaponImages || Object.keys(currentWeaponImages).length === 0) {
-        console.log("Who Brings What?: weaponImages setting is empty, loading default images...");
         const defaultImages = await loadModuleImages();
         await game.settings.set("who-brings-what", "weaponImages", defaultImages);
-        console.log("Who Brings What?: Default images loaded and saved to settings");
-    } else {
-        console.log("Who Brings What?: weaponImages setting already populated with", Object.keys(currentWeaponImages).length, "images");
     }
     
-    // Register the macro function globally so it can be called from a Foundry macro
     window.WhoBringsWhat = {
         showDialog: async function() {
             const weaponImages = game.settings.get("who-brings-what", "weaponImages");
@@ -464,19 +376,15 @@ Hooks.once('ready', async function() {
                 .filter(([key, data]) => data.enabled)
                 .map(([key, data]) => ({ key, ...data }));
 
-            console.log("Who Brings What?: Opening dialog with", enabledImages.length, "enabled images");
-
             if (!enabledImages.length) {
                 return ui.notifications.warn("No weapon images enabled. Configure in module settings.");
             }
 
-            // Render the template with data
             const template = "modules/who-brings-what/templates/weapon-selection-dialog.html";
             const content = await renderTemplate(template, {
                 enabledImages
             });
 
-            // Close existing dialog if open
             if (currentWeaponDialog) {
                 currentWeaponDialog.close();
             }
@@ -486,24 +394,19 @@ Hooks.once('ready', async function() {
                 content,
                 buttons: {},
                 render: html => {
-                    // Handle weapon card clicks
                     html.find(".weapon-card").on("click", async function () {
                         const tokens = canvas.tokens.controlled;
                         if (!tokens.length) return ui.notifications.warn("Select a token!");
 
-                        const key = $(this).data("key"); // This is the file path
+                        const key = $(this).data("key");
                         const weaponName = $(this).data("name");
                         const weaponData = weaponImages[key];
                         
-                        // Create status ID from the file path (more stable and unique)
                         const statusId = generateStatusId(key);
-
-                        console.log(`Who Brings What?: Applying weapon effect - Key: ${key}, Name: ${weaponName}, URL: ${weaponData.url}, StatusID: ${statusId}`);
 
                         for (let token of tokens) {
                             const actor = token.actor;
 
-                            // Check if effect already exists using the status ID
                             const existingEffect = actor.effects.find(e => 
                                 e.statuses && e.statuses.has(statusId)
                             );
@@ -513,16 +416,15 @@ Hooks.once('ready', async function() {
                                 continue;
                             }
 
-                            // Create new effect using the EXACT file URL (never changes)
                             await ActiveEffect.create({
-                                icon: weaponData.url, // ALWAYS use the original file URL
-                                label: weaponName, // Use the custom display name
+                                icon: weaponData.url,
+                                label: weaponName,
                                 name: weaponName,
                                 statuses: [statusId],
                                 origin: actor.uuid,
                                 flags: { 
                                     "who-brings-what": { 
-                                        weaponKey: key, // Store the file path as reference
+                                        weaponKey: key,
                                         weaponFileName: weaponData.fileName
                                     }
                                 }
@@ -532,7 +434,6 @@ Hooks.once('ready', async function() {
                         }
                     });
 
-                    // Handle action buttons
                     html.find("[data-action='manage-effects']").on("click", () => {
                         const tokens = canvas.tokens.controlled;
                         if (!tokens.length) return ui.notifications.warn("Select a token!");
@@ -575,12 +476,10 @@ Hooks.once('ready', async function() {
             currentWeaponDialog.render(true);
         },
 
-        // Function to open the image manager directly
         openImageManager: function() {
             new WeaponImageManager().render(true);
         },
 
-        // Function to open effect manager for selected token
         openEffectManager: function() {
             const tokens = canvas.tokens.controlled;
             if (!tokens.length) return ui.notifications.warn("Select a token!");
@@ -592,15 +491,11 @@ Hooks.once('ready', async function() {
             new EffectManager(tokens[0].actor).render(true);
         },
         
-        // Function to reload images manually (for debugging)
         reloadImages: async function() {
-            console.log("Who Brings What?: Reloading images manually...");
             const defaultImages = await loadModuleImages();
             await game.settings.set("who-brings-what", "weaponImages", defaultImages);
             ui.notifications.info("Images reloaded!");
             return defaultImages;
         }
     };
-    
-    console.log("Who Brings What?: Module fully loaded and ready for use!");
 });
